@@ -1,124 +1,60 @@
 using Microsoft.AspNetCore.Mvc;
-using TravelBookingClassLibrary;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using InsuranceClass.Entity;
+using InsuranceClass.Repository;
 
-namespace TravelBookingWebApi
+namespace InsuranceWebApi.Controllers
 {
-
     [ApiController]
     [Route("[controller]")]
     public class BookingController : ControllerBase
     {
-        private readonly BookandPaymentRepository _userRepository;
+        private readonly BookingRepository _bookingRepository;
 
-        public BookingController(BookandPaymentRepository userRepository)
+        public BookingController()
         {
-            _userRepository = userRepository;
+            _bookingRepository = new BookingRepository();
         }
 
-        // CREATE User
-        [HttpPost]
-        public async Task<IActionResult> CreateBooking([FromBody] TravelBookingClassLibrary.Booking book)
+        // Add a new booking
+        [HttpPost("AddBooking")]
+        public async Task<IActionResult> AddBooking([FromBody] Booking booking)
         {
             if (ModelState.IsValid)
             {
-                await Task.Run(() => _userRepository.AddBooking(book));
-                return Ok(book);
+                await Task.Run(() => _bookingRepository.AddBooking(booking));
+                return Ok("Booking added successfully!");
             }
             return BadRequest(ModelState);
         }
 
-        // READ (Get All Users)
-        [HttpGet("Bookings")]
-        public async Task<IActionResult> GetAllUsers()
+        // Get all bookings
+        [HttpGet("GetAllBookings")]
+        public IActionResult GetAllBookings()
         {
-            try
-            {
-                var users = await Task.Run(() => _userRepository.GetAllUsers());
-                return Ok(users);
-            }
-            catch (Exception ex)
-            {
-                // Log the exception (you can use a logging framework like Serilog, NLog, etc.)
-                // For simplicity, we're just returning the error message here
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            var bookings = _bookingRepository.GetAllBookings();
+            return Ok(bookings);
         }
 
-        // READ (Get User By ID)
-        [HttpGet("Bookings/{id}")]
-        public async Task<IActionResult> GetBookingById(int id)
+        // Update booking
+        [HttpPut("UpdateBooking/{bookingId}")]
+        public async Task<IActionResult> UpdateBooking(int bookingId, [FromBody] DateTime startDate)
         {
-            var book = (await _userRepository.GetAllUsers()).Find(b => b.BookingID == id);
-            if (book == null)
-            {
-                return NotFound();
-            }
-            return Ok(book);
+            await Task.Run(() => _bookingRepository.updateBooking(bookingId, startDate));
+            return Ok("Booking updated successfully!");
         }
 
-        // UPDATE User
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBooking(int id, [FromBody] TravelBookingClassLibrary.Booking updatedbook)
+        // Delete booking
+        [HttpDelete("DeleteBooking/{bookingId}")]
+        public async Task<IActionResult> DeleteBooking(int bookingId)
         {
-            if (id != updatedbook.BookingID)
-            {
-                return BadRequest("Booking ID mismatch");
-            }
-
-            var existingBook = (await Task.Run(() => _userRepository.GetAllUsers())).Find(b => b.BookingID == id);
-            if (existingBook == null)
-            {
-                return NotFound();
-            }
-
-            await Task.Run(() => _userRepository.updateBooking(id, updatedbook.StartDate));
-            return Ok(updatedbook);
+            await Task.Run(() => _bookingRepository.DeleteBooking(bookingId));
+            return Ok("Booking deleted successfully!");
         }
 
-        // DELETE User
-        [HttpDelete("Booking/{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var book = (await Task.Run(() => _userRepository.GetAllUsers())).Find(b => b.BookingID == id);
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            await Task.Run(() => _userRepository.DeleteBooking(id));
-            return Ok($"Booking with ID {id} deleted successfully");
-        }
-        [HttpPut("CancelBooking/{id}")]
-        public async Task<IActionResult> CancelBooking(int id)
-        {
-            using (var context = new BookingPaymentContext())
-            {
-                var booking = await context.Bookings.FindAsync(id);
-                if (booking != null)
-                {
-                    booking.Status = "Cancelled";
-                    await context.SaveChangesAsync();
-                    return Ok($"Booking with ID {id} cancelled successfully");
-                }
-                return NotFound();
-            }
-        }
-
-        // Search by name using Query
-        //[HttpGet("search")]
-        //public async Task<IActionResult> SearchUser([FromQuery] string name)
-        //{
-        //    if (string.IsNullOrEmpty(name))
-        //    {
-        //        return BadRequest("Invalid user data");
-        //    }
-
-        //    var users = await Task.Run(() => _userRepository.GetAllUsers().Where(u => u.Name.Contains(name)).ToList());
-        //    if (users == null || users.Count == 0)
-        //    {
-        //        return NotFound($"No users found with name containing '{name}'");
-        //    }
-        //    return Ok(users);
-        //}
+        // Get insurances by provider
+        
     }
 }
